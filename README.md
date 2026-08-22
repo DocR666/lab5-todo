@@ -74,11 +74,11 @@ GRANT ALL ON SCHEMA public TO todouser;
 > (e.g. `C:\Program Files\PostgreSQL\17\bin`) to your PATH, or call it by
 > full path.
 
-> **Table name note:** the `Todo` entity maps to a table named `lab5_todos`
-> (not `todos`), specifically to avoid colliding with any other app's
-> `todos` table that might already exist in the same database. If you're
-> certain your database is otherwise empty, you can rename it back to
-> `todos` in `Todo.java` (`@Table(name = ...)`) and `data.sql`.
+> **Table name note:** the `Todo` entity maps to a table named `todo`
+> (singular — not `todos`), specifically to avoid colliding with any other
+> app's `todos` table that might already exist in the same database. If
+> you're certain your database is otherwise empty, you can rename it in
+> `Todo.java` (`@Table(name = ...)`) and `data.sql`.
 
 ### 2b. Point the backend at your database
 
@@ -126,7 +126,7 @@ cp target/todo.war <TOMCAT_HOME>/webapps/todo.war
 ```
 
 Tomcat unpacks it automatically and hosts the app under the context path
-`/todo`. On startup, Hibernate creates/updates the `lab5_todos` table
+`/todo`. On startup, Hibernate creates/updates the `todo` table
 (`ddl-auto=update`) and `data.sql` seeds 3 sample tasks (idempotent via
 `ON CONFLICT (id) DO NOTHING`, so re-deploys won't duplicate or error).
 
@@ -211,7 +211,7 @@ Caddy will:
 3. Verify the data landed in PostgreSQL:
 
    ```bash
-   psql -U todouser -d tododb -c "SELECT * FROM lab5_todos;"
+   psql -U todouser -d tododb -c "SELECT * FROM todo;"
    ```
 
 4. Confirm persistence across a restart:

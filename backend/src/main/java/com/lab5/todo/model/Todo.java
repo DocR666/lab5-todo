@@ -15,7 +15,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "lab5_todos")
+@Table(name = "todo")
 public class Todo {
 
     @Id
