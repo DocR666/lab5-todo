@@ -45,27 +45,33 @@ cd lab5-todo
 
 ## 3. Database (PostgreSQL) Setup
 
-**Check if PostgreSQL is installed:**
+*(Instructions below are for Debian — that's what the lab machines run.)*
+
+**Check if PostgreSQL is installed and running:**
 
 ```bash
 psql --version
+sudo systemctl status postgresql
 ```
 
-> On Windows, if `psql` isn't recognized, either PostgreSQL isn't installed
-> yet, or its `bin` folder just isn't on your PATH (e.g.
-> `C:\Program Files\PostgreSQL\17\bin`).
+**If it's not installed:**
 
-**If it's not installed**, install PostgreSQL from
-[postgresql.org/download](https://www.postgresql.org/download/) (or your
-platform's package manager) and make sure the service is running before
-continuing.
+```bash
+sudo apt update
+sudo apt install -y postgresql postgresql-contrib
+sudo systemctl enable --now postgresql
+```
 
-**Either way**, log in as a superuser and create the database, a dedicated
-role, and grant it the permissions it needs:
+**Either way**, log in as the `postgres` superuser and create the database,
+a dedicated role, and grant it the permissions it needs. On Debian, the
+`postgres` OS user connects via **peer authentication** — use `sudo -u postgres`
+rather than `-U postgres`:
+
+```bash
+sudo -u postgres psql
+```
 
 ```sql
--- psql -U postgres
-
 CREATE DATABASE tododb;
 CREATE USER todouser WITH PASSWORD 'TodoPass123!';
 GRANT ALL PRIVILEGES ON DATABASE tododb TO todouser;
@@ -74,6 +80,11 @@ GRANT ALL PRIVILEGES ON DATABASE tododb TO todouser;
 \c tododb
 GRANT ALL ON SCHEMA public TO todouser;
 ```
+
+> When connecting later as `todouser` (e.g. in step 10), use
+> `psql -U todouser -d tododb -h localhost` — the `-h localhost` forces a
+> password-authenticated TCP connection instead of peer auth, which would
+> otherwise reject a non-`postgres` OS user.
 
 > **Table name note:** the `Todo` entity maps to a table named `todo`
 > (singular), specifically to avoid colliding with any other app's `todos`
@@ -85,20 +96,29 @@ GRANT ALL ON SCHEMA public TO todouser;
 
 ### 4a. Check if Tomcat is installed
 
+The lab machines already have **Tomcat 10** installed via `apt` (package
+`tomcat10` — required specifically because it's Jakarta EE, matching Spring
+Boot 3). Verify it:
+
 ```bash
-catalina.sh version    # or catalina.bat version on Windows, if it's on PATH
+dpkg -l | grep tomcat10
+sudo systemctl status tomcat10
 ```
 
-**If it's not installed** (Tomcat 10 is required — Jakarta EE namespace,
-matches Spring Boot 3):
+**If it's not installed** (e.g. you're setting this up on your own machine):
 
-```powershell
-Invoke-WebRequest -Uri "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.59/bin/apache-tomcat-10.1.59.zip" -OutFile "$env:USERPROFILE\Downloads\tomcat.zip"
-Expand-Archive -Path "$env:USERPROFILE\Downloads\tomcat.zip" -DestinationPath "$env:USERPROFILE\tomcat" -Force
-
-$env:CATALINA_HOME = "$env:USERPROFILE\tomcat\apache-tomcat-10.1.59"
-$env:JAVA_HOME = "C:\Program Files\Eclipse Adoptium\jdk-17.x.x-hotspot"   # match your JDK 17 install
+```bash
+sudo apt update
+sudo apt install -y tomcat10
+sudo systemctl enable --now tomcat10
 ```
+
+On Debian, the package lays things out as:
+- `CATALINA_HOME` (binaries): `/usr/share/tomcat10`
+- `CATALINA_BASE` (config/webapps/logs — this is what you actually care
+  about): `/var/lib/tomcat10`
+- webapps directory: `/var/lib/tomcat10/webapps`
+- logs: `/var/log/tomcat10/catalina.out`
 
 By default Tomcat listens on port `8080` — note the port either way, you'll
 need it in step 8.
@@ -123,6 +143,21 @@ them).
 
 ### 4d. Compile, build, and package the WAR
 
+This needs JDK 17 and Maven. Check first — these aren't part of the
+Tomcat/Caddy/npm set that's pre-installed:
+
+```bash
+mvn -version
+```
+
+If that fails:
+
+```bash
+sudo apt install -y openjdk-17-jdk maven
+```
+
+Then build:
+
 ```bash
 cd backend
 mvn clean package
@@ -135,21 +170,27 @@ running tests, use `mvn clean package -DskipTests`.
 ### 4e. Deploy to Tomcat
 
 ```bash
-cp target/todo.war <TOMCAT_HOME>/webapps/todo.war
+sudo cp target/todo.war /var/lib/tomcat10/webapps/todo.war
 ```
 
-Tomcat unpacks it automatically and hosts the app under the context path
-`/todo`.
+(`sudo` is needed because `/var/lib/tomcat10/webapps` isn't writable by
+your regular user.) Tomcat unpacks it automatically and hosts the app under
+the context path `/todo`.
 
 ### 4f. Start Tomcat
 
-```powershell
-& "$env:CATALINA_HOME\bin\startup.bat"      # starts in a new window, returns immediately
-# or, to watch logs directly in the current terminal:
-& "$env:CATALINA_HOME\bin\catalina.bat" run
+```bash
+sudo systemctl restart tomcat10   # (re)starts and picks up the new WAR
 ```
 
-To stop it: `& "$env:CATALINA_HOME\bin\shutdown.bat"`.
+To check it's actually running, or to watch logs while it starts:
+
+```bash
+sudo systemctl status tomcat10
+tail -f /var/log/tomcat10/catalina.out
+```
+
+To stop it: `sudo systemctl stop tomcat10`.
 
 ### 4g. Access the API endpoint
 
@@ -206,6 +247,9 @@ edit the collection's `baseUrl` variable to `http://localhost:8080/todo/api`.
 
 ## 6. Frontend (ReactJS) — Install and Configure
 
+The lab machines already have `npm` installed via `apt`. Verify with
+`npm --version`; if it's missing, `sudo apt install -y npm`.
+
 ```bash
 cd frontend
 npm install
@@ -252,15 +296,27 @@ npm run lint
 
 ## 8. Webserver/Reverse Proxy (Caddy) — Install and Configure
 
-**Check if Caddy is installed:**
+The lab machines already have Caddy installed via `apt`. **Check it's
+there:**
 
 ```bash
 caddy version
 ```
 
-**If it's not installed**, get it from
-[caddyserver.com/docs/install](https://caddyserver.com/docs/install) (e.g.
-`winget install CaddyServer.Caddy` on Windows).
+**If it's not installed:**
+
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+> Note: `apt install caddy` also enables a system-wide `caddy.service`
+> serving `/etc/caddy/Caddyfile` on ports 80/443. That's a separate
+> instance from the one you'll run below — it won't conflict, since this
+> project's Caddyfile listens on `:3000`.
 
 **Either way**, open `caddy/Caddyfile` (marked `STUDENT TODO`) and check:
 
@@ -346,8 +402,14 @@ Expect `HTTP/1.1 200 OK` with `index.html` content.
 
 ## 10. Test the Application from a Browser
 
-**Ensure all three are up:** PostgreSQL (step 3), Tomcat (step 4f), Caddy
-(step 8).
+**Ensure all three are up:**
+
+```bash
+sudo systemctl status postgresql
+sudo systemctl status tomcat10
+```
+
+(and Caddy running in your terminal from step 8, via `caddy run --config ./caddy/Caddyfile`).
 
 Then open `http://localhost:3000` and manually test every feature:
 
@@ -361,15 +423,15 @@ Then open `http://localhost:3000` and manually test every feature:
    applies) and use Edit to change its details.
 5. **Delete**: remove a task and confirm it disappears immediately.
 6. **Filter**: use the All / Active / Completed tabs.
-7. **Persistence**: restart Tomcat
-   (`shutdown.bat` then `startup.bat`) and reload — your data should still
-   be there.
-8. **Error handling**: stop Tomcat while Caddy is still running, reload or
-   try an action — you should see: *"502 Bad Gateway: Backend API service
-   is down or unreachable."*
+7. **Persistence**: restart Tomcat (`sudo systemctl restart tomcat10`) and
+   reload — your data should still be there.
+8. **Error handling**: stop Tomcat (`sudo systemctl stop tomcat10`) while
+   Caddy is still running, reload or try an action — you should see:
+   *"502 Bad Gateway: Backend API service is down or unreachable."*
+   (Remember to `sudo systemctl start tomcat10` again afterwards.)
 9. Verify directly in PostgreSQL:
    ```bash
-   psql -U todouser -d tododb -c "SELECT * FROM todo;"
+   psql -U todouser -d tododb -h localhost -c "SELECT * FROM todo;"
    ```
 
 ---
