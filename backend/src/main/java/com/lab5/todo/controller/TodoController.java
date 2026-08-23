@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -31,7 +32,7 @@ public class TodoController {
 
     @GetMapping
     public List<Todo> getAllTodos(@RequestParam(required = false) String sort) {
-        List<Todo> todos = todoRepository.findAll();
+        List<Todo> todos = new ArrayList<>(todoRepository.findAll());
         if ("dueDate".equalsIgnoreCase(sort)) {
             todos.sort(Comparator.comparing(Todo::getDueDate, Comparator.nullsLast(Comparator.naturalOrder())));
         } else if ("priority".equalsIgnoreCase(sort)) {
