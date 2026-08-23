@@ -302,7 +302,7 @@ npm run lint
 | Test type | What it proves | Command |
 |---|---|---|
 | Component/unit (RTL + Vitest) | Components behave correctly in isolation | `npm run test` |
-| Mocked-network (MSW) | App logic (loading, error banner) works without a real API | included in `npm run test` — see `App.test.jsx` |
+| Mocked-network (Mock Service Worker / MSW) | App logic (loading, error banner) works without a real API | included in `npm run test` — see `App.test.jsx` |
 | Static analysis (ESLint) | No obvious bugs / bad patterns before runtime | `npm run lint` |
 
 ---
@@ -490,9 +490,9 @@ followed the steps.
 
 10. What's the difference between a *unit test* and a *contract test*? Give
     one concrete example of each from this project.
-11. Why do the frontend tests use MSW to fake the API instead of hitting
-    the real backend? What would break about the tests if they *did* hit
-    the real backend?
+11. Why do the frontend tests use Mock Service Worker (MSW) to fake the
+    API instead of hitting the real backend? What would break about the
+    tests if they *did* hit the real backend?
 12. `curl -I http://localhost:3000/` and `curl -i http://localhost:3000/api/todos`
     (with the backend stopped) test two different things about Caddy. What
     is each one actually checking?
