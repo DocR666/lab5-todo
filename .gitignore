@@ -4,3 +4,6 @@ dist/
 *.log
 .idea/
 .vscode/
+
+# Instructor-only, never push to the student-facing repo
+INSTRUCTOR_ANSWER_KEY.md
