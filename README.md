@@ -23,6 +23,19 @@ Every file you actually need to edit is marked with a
 `===== STUDENT TODO =====` comment block — search for that string if you
 just want the list of things to change.
 
+## Lab Time Budget (2.5 hours)
+
+| Time | What |
+|---|---|
+| ~2 hours | Steps **1, 2, 3, 4, 6, 8, 10** — get the app running end to end |
+| ~15–20 min | Buffer for debugging (something *will* go wrong — that's normal, see step 4/8) |
+| ~15 min | Fill in the **Observation Book** (last section of this guide) |
+
+**Steps 5, 7, and 9 (the isolated testing sections) are optional / take-home.**
+If you finish the core steps early, do them in the remaining lab time;
+otherwise complete them at home before the deadline your instructor gives
+you.
+
 ---
 
 ## 1. Fork the Repo
@@ -212,7 +225,7 @@ You should get back a JSON array of 3 sample tasks.
 
 ---
 
-## 5. API Testing — Unit Testing (No Database) & Contract Testing
+## 5. API Testing — Unit Testing (No Database) & Contract Testing *(Optional / Take-Home)*
 
 **Unit / slice tests** (`backend/src/test/java/.../TodoControllerTest.java`)
 run against a **mocked** `TodoRepository` — no real PostgreSQL connection is
@@ -265,7 +278,7 @@ full end-to-end testing.)
 
 ---
 
-## 7. Frontend UI Testing (No Backend API)
+## 7. Frontend UI Testing (No Backend API) *(Optional / Take-Home)*
 
 **Component/unit tests** (`frontend/src/**/__tests__/*.test.jsx` and
 `frontend/src/App.test.jsx`) use React Testing Library with the network
@@ -348,7 +361,7 @@ Caddy will:
 
 ---
 
-## 9. Webserver/Reverse Proxy Testing (No UI, No Backend API)
+## 9. Webserver/Reverse Proxy Testing (No UI, No Backend API) *(Optional / Take-Home)*
 
 These check Caddy's own behavior, independent of whether the frontend logic
 or backend API are actually correct.
@@ -433,6 +446,56 @@ Then open `http://localhost:3000` and manually test every feature:
    ```bash
    psql -U todouser -d tododb -h localhost -c "SELECT * FROM todo;"
    ```
+
+---
+
+## Observation Book
+
+Answer these in your lab observation book. Write in your own words — these
+are checking your understanding of *why* things work, not just that you
+followed the steps.
+
+**Core questions (answer these — based on steps 1–4, 6, 8, 10):**
+
+1. Trace the path of a request when you click "Add Task" in the browser at
+   `http://localhost:3000`. Which of the three tiers (Caddy, Spring
+   Boot/Tomcat, PostgreSQL) handles each part of that request, and in what
+   order?
+2. What HTTP status code does the API return when you `POST` a todo with a
+   blank title? Where in the code is that enforced, and why does it happen
+   automatically without the controller writing an `if` check for it?
+3. What status code does `GET /api/todos/{id}` return for an id that
+   doesn't exist? Why 404 and not, say, an empty response with status 200?
+4. `application.properties` sets `spring.jpa.hibernate.ddl-auto=update`.
+   What would change if this were `create-drop` instead, and why would that
+   be a bad choice for this lab specifically?
+5. `data.sql` uses `INSERT ... ON CONFLICT (id) DO NOTHING`. What would go
+   wrong on the *second* Tomcat restart if that `ON CONFLICT` clause were
+   removed?
+6. When you stopped Tomcat and reloaded the app (through Caddy), you saw a
+   "502 Bad Gateway" banner. In your own words, explain why Caddy returns
+   `502` here specifically, rather than `404` or hanging forever.
+7. The `Caddyfile` has a note that `caddy run` must be executed **from the
+   project root**, not from inside `caddy/`. Why does the directory you run
+   the command from affect whether `root * frontend/dist` finds the right
+   files?
+8. Describe **one specific problem** you personally ran into during setup
+   (a permission error, a wrong path, a port already in use, a typo — pick
+   a real one) — what the error message said, how you diagnosed it, and
+   what fixed it.
+9. The `Todo` entity's table is named `todo` (singular), not `todos`. What
+   specific problem was this naming choice designed to avoid?
+
+**Bonus questions (only if you completed the optional steps 5, 7, and/or 9):**
+
+10. What's the difference between a *unit test* and a *contract test*? Give
+    one concrete example of each from this project.
+11. Why do the frontend tests use MSW to fake the API instead of hitting
+    the real backend? What would break about the tests if they *did* hit
+    the real backend?
+12. `curl -I http://localhost:3000/` and `curl -i http://localhost:3000/api/todos`
+    (with the backend stopped) test two different things about Caddy. What
+    is each one actually checking?
 
 ---
 
