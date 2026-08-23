@@ -27,7 +27,7 @@ just want the list of things to change.
 
 | Time | What |
 |---|---|
-| ~2 hours | Steps **1, 2, 3, 4, 6, 8, 10** — get the app running end to end |
+| ~2 hours | Steps **3, 4, 6, 8, 10** below (plus forking/cloning per your Lab Manual) — get the app running end to end |
 | ~15–20 min | Buffer for debugging (something *will* go wrong — that's normal, see step 4/8) |
 | ~15 min | Fill in the **Observation Book** (last section of this guide) |
 
@@ -38,21 +38,8 @@ you.
 
 ---
 
-## 1. Fork the Repo
-
-1. Go to **https://github.com/mit-cse-pdc/lab5-todo**.
-2. Click **Fork** (top right) to fork it into your own GitHub account.
-
----
-
-## 2. Clone the Repo
-
-Clone **your fork** (not the original) — replace `<your-username>` below:
-
-```bash
-git clone https://github.com/<your-username>/lab5-todo.git
-cd lab5-todo
-```
+> **Steps 1 and 2 (Fork the Repo, Clone the Repo) are covered in your Lab
+> Manual.** Complete those first, then come back here starting at step 3.
 
 ---
 
