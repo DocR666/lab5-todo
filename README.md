@@ -456,33 +456,24 @@ followed the steps.
 4. `application.properties` sets `spring.jpa.hibernate.ddl-auto=update`.
    What would change if this were `create-drop` instead, and why would that
    be a bad choice for this lab specifically?
-5. `data.sql` uses `INSERT ... ON CONFLICT (id) DO NOTHING`. What would go
-   wrong on the *second* Tomcat restart if that `ON CONFLICT` clause were
-   removed?
-6. When you stopped Tomcat and reloaded the app (through Caddy), you saw a
+5. When you stopped Tomcat and reloaded the app (through Caddy), you saw a
    "502 Bad Gateway" banner. In your own words, explain why Caddy returns
    `502` here specifically, rather than `404` or hanging forever.
-7. The `Caddyfile` has a note that `caddy run` must be executed **from the
-   project root**, not from inside `caddy/`. Why does the directory you run
-   the command from affect whether `root * frontend/dist` finds the right
-   files?
-8. Describe **one specific problem** you personally ran into during setup
+6. Describe **one specific problem** you personally ran into during setup
    (a permission error, a wrong path, a port already in use, a typo — pick
    a real one) — what the error message said, how you diagnosed it, and
    what fixed it.
-9. The `Todo` entity's table is named `todo` (singular), not `todos`. What
-   specific problem was this naming choice designed to avoid?
 
 **Bonus questions (only if you completed the optional steps 5, 7, and/or 9):**
 
-10. What's the difference between a *unit test* and a *contract test*? Give
-    one concrete example of each from this project.
-11. Why do the frontend tests use Mock Service Worker (MSW) to fake the
-    API instead of hitting the real backend? What would break about the
-    tests if they *did* hit the real backend?
-12. `curl -I http://localhost:3000/` and `curl -i http://localhost:3000/api/todos`
-    (with the backend stopped) test two different things about Caddy. What
-    is each one actually checking?
+7. What's the difference between a *unit test* and a *contract test*? Give
+   one concrete example of each from this project.
+8. Why do the frontend tests use Mock Service Worker (MSW) to fake the
+   API instead of hitting the real backend? What would break about the
+   tests if they *did* hit the real backend?
+9. `curl -I http://localhost:3000/` and `curl -i http://localhost:3000/api/todos`
+   (with the backend stopped) test two different things about Caddy. What
+   is each one actually checking?
 
 ---
 
