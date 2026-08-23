@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "Lab 5 Todo API - Contract Tests",
+    "description": "Contract tests for the /api/todos endpoints. Each request asserts on status codes and response shape (field presence/types), not just 'it works' — that's what makes this a contract test rather than a smoke test. Run against Caddy (default, {{baseUrl}} = http://localhost:3000/api) or point baseUrl directly at Tomcat (http://localhost:8080/todo/api) to test the backend in isolation.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000/api" },
+    { "key": "createdId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "GET /todos - returns an array with the expected shape",
+      "request": { "method": "GET", "url": "{{baseUrl}}/todos" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "pm.test('body is an array', () => {",
+              "  const body = pm.response.json();",
+              "  pm.expect(body).to.be.an('array');",
+              "});",
+              "pm.test('each item matches the Todo contract', () => {",
+              "  const body = pm.response.json();",
+              "  body.forEach((todo) => {",
+              "    pm.expect(todo).to.have.property('id').that.is.a('number');",
+              "    pm.expect(todo).to.have.property('title').that.is.a('string');",
+              "    pm.expect(todo).to.have.property('completed').that.is.a('boolean');",
+              "    pm.expect(todo).to.have.property('priority').that.is.oneOf(['LOW', 'MEDIUM', 'HIGH']);",
+              "  });",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /todos/{id} - 404 for a non-existent id",
+      "request": { "method": "GET", "url": "{{baseUrl}}/todos/999999" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 404', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /todos - blank title is rejected (400)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"\", \"priority\": \"MEDIUM\"}"
+        },
+        "url": "{{baseUrl}}/todos"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 400', () => pm.response.to.have.status(400));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /todos - valid payload creates a todo (201)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Contract test task\", \"description\": \"created by Postman\", \"priority\": \"HIGH\", \"dueDate\": \"2026-12-01\"}"
+        },
+        "url": "{{baseUrl}}/todos"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 201', () => pm.response.to.have.status(201));",
+              "const body = pm.response.json();",
+              "pm.test('response echoes the created todo with a generated id', () => {",
+              "  pm.expect(body).to.have.property('id').that.is.a('number');",
+              "  pm.expect(body.title).to.eql('Contract test task');",
+              "  pm.expect(body.completed).to.eql(false);",
+              "});",
+              "pm.collectionVariables.set('createdId', body.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT /todos/{id} - updates the created todo",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"title\": \"Contract test task (updated)\", \"description\": \"updated by Postman\", \"completed\": true, \"priority\": \"LOW\", \"dueDate\": \"2026-12-02\"}"
+        },
+        "url": "{{baseUrl}}/todos/{{createdId}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 200', () => pm.response.to.have.status(200));",
+              "const body = pm.response.json();",
+              "pm.test('fields were updated', () => {",
+              "  pm.expect(body.title).to.eql('Contract test task (updated)');",
+              "  pm.expect(body.completed).to.eql(true);",
+              "  pm.expect(body.priority).to.eql('LOW');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "DELETE /todos/{id} - removes the created todo (204)",
+      "request": { "method": "DELETE", "url": "{{baseUrl}}/todos/{{createdId}}" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 204', () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /todos/{id} - deleted todo is now 404",
+      "request": { "method": "GET", "url": "{{baseUrl}}/todos/{{createdId}}" },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('status is 404', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}
