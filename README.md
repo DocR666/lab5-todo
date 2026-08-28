@@ -720,9 +720,10 @@ docker compose down -v   # also deletes the Postgres volume — full reset
 
 ## Lab 6 — Observation Book
 
-Answer these in your lab observation book, same as Lab 5's. These are about
-understanding *why* each test type exists and what it actually proves —
-not just that you ran the commands.
+Answer these in your lab observation book, same as Lab 5's. Questions 1–6
+are about the testing suite; 7–12 are about the Docker setup. Both sets are
+about understanding *why* things are built the way they are — not just
+that you ran the commands.
 
 1. What's the actual difference between `mvn test` and `mvn verify` in
    this project, and why does `TodoControllerIT.java` only run under one
@@ -742,6 +743,28 @@ not just that you ran the commands.
 6. Pick one test type from Lab 6 you didn't get to run yourself (or that
    failed for you). What do you think it would have caught that the
    others couldn't?
+7. `docker-compose.yml` sets `DB_HOST=postgres` for the backend service, but
+   `application.properties` defaults to `localhost` when that variable
+   isn't set. Why doesn't `localhost` work between containers, and what
+   would actually break if you deleted that one environment variable line?
+8. `backend/Dockerfile` has two `FROM` lines (a multi-stage build). What
+   specifically gets copied from the first stage into the second, and what
+   would go wrong (or just get worse) if you wrote it as a single stage
+   instead?
+9. `docker-compose.yml` makes the backend wait for Postgres's healthcheck
+   (`condition: service_healthy`) instead of just `depends_on: postgres`.
+   What's the practical difference, and what failure would you expect to
+   see if that healthcheck weren't there?
+10. The Postgres service uses a named volume (`postgres-data`). What
+    happens to your todos after `docker compose down`? What about after
+    `docker compose down -v`? Why the difference?
+11. `caddy/Dockerfile`'s build context in `docker-compose.yml` is the
+    project root (`.`), not `caddy/` itself. Why does building that image
+    need access to files outside the `caddy/` directory?
+12. You ran the exact same Postman collection, Playwright suite, and
+    `smoke-test.sh` against both the bare-metal stack and the Dockerized
+    one, without changing a single test file. What specific design choice
+    in `docker-compose.yml` made that possible?
 
 ---
 
