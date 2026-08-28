@@ -1,0 +1,12 @@
+# Applies to the root build context (caddy/Dockerfile) — keeps the build
+# context small and fast by excluding everything that image doesn't need.
+.git
+docs/
+target/
+node_modules/
+**/node_modules/
+frontend/dist/
+e2e/test-results/
+e2e/playwright-report/
+*.md
+INSTRUCTOR_ANSWER_KEY.md

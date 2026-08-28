@@ -639,6 +639,85 @@ Same as Lab 5 step 4h — try requests by hand against the live API:
 
 ---
 
+## Lab 6 — Docker: Build & Run Locally
+
+The same 3-tier app from Lab 5 — Postgres, backend, Caddy(+frontend) — now
+containerized. Nothing about the app changed; only *how it's deployed* did.
+
+### Install Docker (if needed)
+
+```bash
+docker --version
+docker compose version
+```
+
+If either is missing:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER   # lets you run docker without sudo
+```
+
+(Log out and back in for the group change to take effect.)
+
+### What's in each file
+
+| File | What it does |
+|---|---|
+| `backend/Dockerfile` | Multi-stage build: Maven compiles `todo.war`, then it runs on `tomcat:10.1-jdk17-temurin` — same WAR-on-Tomcat model as Lab 5, just containerized |
+| `caddy/Dockerfile` | Multi-stage build: Node builds `frontend/dist`, then Caddy serves it + proxies `/api/*` — same single process as Lab 5, containerized |
+| `docker-compose.yml` | Wires all 3 services together: Postgres, backend, Caddy |
+
+### Why `localhost` isn't used inside `docker-compose.yml`
+
+On bare metal, the backend talks to `localhost:5432` and Caddy proxies to
+`localhost:8080`, because everything runs directly on your machine. Inside
+Docker, each service is its own container — they reach each other by
+**service name**, not `localhost`. That's why `docker-compose.yml` sets
+`DB_HOST=postgres` and `BACKEND_HOST=backend` as environment variables,
+which `application.properties` and the `Caddyfile` now read via
+`${DB_HOST:localhost}` / `{$BACKEND_HOST:localhost}` — the part after the
+colon is the bare-metal default, used automatically when no environment
+variable is set (i.e. still exactly Lab 5's behavior on bare metal).
+
+### Build and run
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+Check it's up:
+
+```bash
+curl http://localhost:3000/                # frontend, expect 200
+curl http://localhost:3000/api/todos        # API through Caddy, expect the 3 seeded tasks
+```
+
+Or just open `http://localhost:3000` in a browser — same app, same seeded
+data, same everything, now running from 3 containers instead of 3
+systemd/manual processes.
+
+### Re-run all 9 tests against this stack
+
+Host ports are identical to bare metal (`3000`, `8080`, `5432`), so
+**every test from steps 1–9 above should pass unchanged** — that's the
+point of matching the ports. Re-run them now to confirm: contract,
+smoke, and E2E tests hit the running containers directly; `mvn verify`
+spins up its own separate, throwaway Postgres via Testcontainers (nothing
+to do with `docker-compose.yml`'s Postgres) and works the same either way.
+
+### Stop it
+
+```bash
+docker compose down      # stops and removes containers; your data survives
+docker compose down -v   # also deletes the Postgres volume — full reset
+```
+
+---
+
 ## Lab 6 — Observation Book
 
 Answer these in your lab observation book, same as Lab 5's. These are about
