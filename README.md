@@ -477,6 +477,168 @@ followed the steps.
 
 ---
 
+---
+
+# Lab 6 — Full Testing Suite
+
+Lab 5 introduced two of these as optional/take-home material (backend unit
+tests, contract tests). Lab 6 completes the full testing pyramid for this
+app: **9 test types**, numbered here from fastest/most-isolated to
+slowest/most-real. Each layer catches a class of bug the ones above it
+can't — a passing unit test doesn't mean the real database agrees, and a
+passing integration test doesn't mean a real user's click path works.
+
+**Types 1–3 need nothing but the source code.** Types 4–9 need the stack
+running (steps 3, 4, 6, 8 above) — Type 4 additionally needs Docker, since
+it spins up a real, throwaway PostgreSQL container.
+
+| # | Type | Layer | Command | Report saved to |
+|---|---|---|---|---|
+| 1 | Static analysis | Frontend | `cd frontend && npm run lint` | console only |
+| 2 | Unit | Backend | `cd backend && mvn test` | `backend/target/surefire-reports/` |
+| 3 | Unit | Frontend | `cd frontend && npm run test` | console only |
+| 4 | Integration | Backend | `cd backend && mvn verify` | `backend/target/failsafe-reports/` |
+| 5 | Integration | Frontend | `cd frontend && npm run test` (runs alongside #3) | console only |
+| 6 | Contract | API | `npx newman run postman/Lab5-Todo-API.postman_collection.json` | console only |
+| 7 | Smoke | Caddy | `./caddy/smoke-test.sh` | console only |
+| 8 | End-to-end (E2E) | Full stack | `cd e2e && npm run test` | `e2e/playwright-report/index.html` |
+| 9 | Manual / exploratory | Full stack | Swagger UI | — |
+
+All report paths above (`target/`, `e2e/playwright-report/`,
+`e2e/test-results/`) are gitignored — local build artifacts, not something
+you commit.
+
+## 1. Static Analysis (ESLint)
+
+Same as Lab 5 step 7 — catches bugs (unused vars, hook-rule violations)
+before the app even runs:
+
+```bash
+cd frontend
+npm run lint
+```
+
+## 2. Backend Unit Tests
+
+Same as Lab 5 step 5 — `backend/src/test/java/.../TodoControllerTest.java`
+runs against a **mocked** `TodoRepository`, no real database:
+
+```bash
+cd backend
+mvn test
+```
+
+## 3. Frontend Unit Tests
+
+Same as Lab 5 step 7 — component tests
+(`frontend/src/components/__tests__/*.test.jsx`) plus `App.test.jsx`'s
+initial-load and 502-banner checks, network mocked via MSW (Mock Service
+Worker):
+
+```bash
+cd frontend
+npm run test
+```
+
+## 4. Backend Integration Tests (Testcontainers)
+
+New in Lab 6. Unlike the mocked-repository unit tests, these hit a **real**
+PostgreSQL — started automatically in a throwaway Docker container per test
+run, not your actual `tododb`:
+
+- `backend/src/test/java/com/lab5/todo/repository/TodoRepositoryIT.java` —
+  real `TodoRepository`: save→find, update→find, delete→confirm gone
+- `backend/src/test/java/com/lab5/todo/controller/TodoControllerIT.java` —
+  real HTTP calls (`TestRestTemplate`) through the real controller into the
+  real repository: create→fetch, update→fetch, delete→404, get-all
+
+Requires Docker running. Named `*IT.java` (not `*Test.java`) so they're
+picked up by Maven **Failsafe**, not Surefire:
+
+```bash
+cd backend
+mvn verify
+```
+
+`mvn test` deliberately does **not** run these — only `mvn verify` does.
+That split matters: unit tests should stay fast enough to run on every
+save, while spinning up a Docker container each time is a heavier,
+deliberate step.
+
+## 5. Frontend Integration Tests
+
+New in Lab 6, and a different thing from Type 3 above — not one component
+in isolation, but multiple real components **composed together** (real
+`TaskForm` + `TaskList`/`TaskItem` + `FilterTabs` + `ErrorBanner`, only the
+network mocked via MSW), checking that an action on one component flows
+correctly through `App`'s state into another component's rendered output:
+
+- `frontend/src/App.integration.test.jsx` — submitting `TaskForm` updates
+  the real `TaskList`; toggling a `TaskItem` checkbox updates what
+  `FilterTabs`-filtered views show; dismissing `ErrorBanner` clears it
+
+```bash
+cd frontend
+npm run test   # runs alongside the Type 3 unit tests, same command
+```
+
+## 6. Contract Tests (Postman/Newman)
+
+Same as Lab 5 step 5 — verifies the API's *shape* (status codes, response
+field types), independent of implementation:
+
+```bash
+npx newman run postman/Lab5-Todo-API.postman_collection.json
+```
+
+Defaults to `http://localhost:3000/api` (through Caddy). Edit the
+collection's `baseUrl` variable to `http://localhost:8080/todo/api` to test
+the backend in isolation.
+
+## 7. Smoke Tests (Caddy)
+
+New in Lab 6 — automates the manual curl checks from Lab 5 step 9 into one
+script with clear pass/fail output, instead of running each curl by hand:
+
+```bash
+./caddy/smoke-test.sh
+```
+
+Covers: Caddyfile config validation, static file serving independent of
+the backend, reverse-proxy routing (502 not 404 when the backend is down),
+security headers present, and SPA fallback. Requires Caddy running from the
+project root (see step 8); for the reverse-proxy and static-serving checks
+to mean anything, the backend should be stopped first — see
+`caddy/smoke-test.sh`'s header comment.
+
+## 8. End-to-End (E2E) Tests
+
+New in Lab 6 — the only layer that fakes **nothing**: a real browser
+(Playwright/Chromium) driving the real built frontend, through real Caddy,
+into real Tomcat, against your real `tododb`:
+
+```bash
+cd e2e
+npm install
+npm run install-browsers   # first time only
+npm run test
+```
+
+Covers: seeded tasks load, creating a task via the form, marking a task
+complete (checks the actual `completed` class + strikethrough style),
+deleting a task and confirming it's still gone after a page reload (proves
+it round-tripped through the real backend, not just local UI state), and
+the All/Active/Completed filter tabs. See `e2e/README.md` for prerequisites
+— this is the one layer that genuinely cannot run without the full stack up.
+
+## 9. Manual / Exploratory Testing (Swagger UI)
+
+Same as Lab 5 step 4h — try requests by hand against the live API:
+
+`http://localhost:8080/todo/swagger-ui/index.html`
+
+---
+
 ## API Reference
 
 | Method | Path                        | Description                                  |
