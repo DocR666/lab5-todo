@@ -639,6 +639,33 @@ Same as Lab 5 step 4h — try requests by hand against the live API:
 
 ---
 
+## Lab 6 — Observation Book
+
+Answer these in your lab observation book, same as Lab 5's. These are about
+understanding *why* each test type exists and what it actually proves —
+not just that you ran the commands.
+
+1. What's the actual difference between `mvn test` and `mvn verify` in
+   this project, and why does `TodoControllerIT.java` only run under one
+   of them?
+2. The frontend has both `App.test.jsx` and `App.integration.test.jsx`.
+   Both use MSW to fake the network — so what's actually different about
+   what each one tests?
+3. `TodoRepositoryIT.java` spins up a real PostgreSQL container instead of
+   using your actual `tododb`. Why does that matter — what would a
+   mocked-repository unit test never be able to catch that this can?
+4. Of the 9 test types in this lab, which ones would still pass even if
+   Caddy were completely misconfigured (wrong port, broken proxy rule)?
+   Which ones would fail? Explain the difference.
+5. `e2e/tests/utils.js` deletes every task it creates before the test
+   finishes. Why does this matter here specifically, in a way it wouldn't
+   for the backend integration tests?
+6. Pick one test type from Lab 6 you didn't get to run yourself (or that
+   failed for you). What do you think it would have caught that the
+   others couldn't?
+
+---
+
 ## API Reference
 
 | Method | Path                        | Description                                  |
