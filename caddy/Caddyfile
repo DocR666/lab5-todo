@@ -8,17 +8,12 @@
 	}
 
 	# ===== STUDENT TODO =====
-	# {$BACKEND_HOST:localhost} and {$BACKEND_PORT:8080} are Caddy env-var
-	# placeholders with a default after the colon:
-	#   - Bare metal (Lab 5): if your Tomcat listens on a different port
-	#     (e.g. 8888), edit the "8080" default below directly.
-	#   - Docker (Lab 6): leave the defaults as-is — docker-compose.yml sets
-	#     BACKEND_HOST/BACKEND_PORT as environment variables instead, since
-	#     "localhost" doesn't mean the backend container from in here.
+	# If your Tomcat listens on a port other than 8080 (e.g. 8888), change
+	# "localhost:8080" below to match.
 	# =========================
 	handle /api/* {
 		rewrite * /todo{uri}
-		reverse_proxy {$BACKEND_HOST:localhost}:{$BACKEND_PORT:8080}
+		reverse_proxy localhost:8080
 	}
 
 	# Serve the built React app for everything else.
